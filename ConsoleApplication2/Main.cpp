@@ -47,7 +47,7 @@ Field::Field(int x, int y, int fieldCost, Field* parent) {
 };
 
 
-//Okreœla kierunek
+//OkreÅ“la kierunek
 enum Direction {
 	Left,
 	Right,
@@ -64,7 +64,7 @@ Field* FindField(int x, int y, vector<Field*> list) {
 	return nullptr;
 };
 
-//Pobiera komórkê w stosunku do aktualnego po³o¿enia
+//Pobiera komÃ³rkÃª w stosunku do aktualnego poÂ³oÂ¿enia
 Field* GetCell(Field* cur, Direction dir, vector<vector<int>> map, vector<Field*> added) {
 	int x = cur->x;
 	int y = cur->y;
@@ -98,7 +98,7 @@ void RefreshMap(vector<vector<int>>* map) {
 	}
 }
 
-//Rysuje mapê
+//Rysuje mapÃª
 void DrawMap(vector<vector<int>> map) {
 	system("cls");
 	HANDLE hOut;
@@ -173,6 +173,8 @@ int main() {
 		map.insert(map.begin(), tempVector);
 	}
 
+	plik.close();
+
 	map[0][0] = 7;
 
 	while (closedList[closedList.size()-1]->x != 19 || closedList[closedList.size() - 1]->y != 19) {
@@ -217,7 +219,6 @@ int main() {
 	}
 
 	DrawMap(map);
-	plik.close();
 	system("pause");
 
 
