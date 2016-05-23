@@ -10,34 +10,37 @@
 #define ECV 0;
 const int yLen = 20;
 const int xLen = 20;
+const int ANIMSPEED = 35;
 
 
 using namespace std;
+
+//Metryka euklidesa
+double CountEuclides(int x, int y) {
+	return sqrt(pow((x - xLen - 1), 2) + pow((y - yLen - 1), 2));
+}
 
 class Field {
 public:
 	Field(int x, int y, int fieldCost);
 	Field(int x, int y, int fieldCost, Field* parent);
 	void CountHeuristic() {
-		double value;
-		value = this->fieldCost + sqrt(pow((this->x - xLen - 1), 2) + pow((this->y - yLen - 1), 2));
-		this->heuristicValue = value;
+		this->compareFunctionValue = this->fieldCost + CountEuclides(this->x, this->y);
 	};
-	double heuristicValue;
+	double compareFunctionValue;
 	int x;
 	int y;
 	int fieldCost;
 	Field* parent;
 };
 
-//To jest konstruktor !!! :D
 Field::Field(int x, int y, int fieldCost) {
 	this->x = x;
 	this->y = y;
 	this->fieldCost = fieldCost;
 	this->parent = nullptr;
 };
-//TO JEST DRUGI KONSTRUKTOR :)
+
 Field::Field(int x, int y, int fieldCost, Field* parent) {
 	this->x = x;
 	this->y = y;
@@ -55,6 +58,7 @@ enum Direction {
 	Down
 };
 
+//Szukaj w vectorze pola o odpowiednich kordynatach
 Field* FindField(int x, int y, vector<Field*> list) {
 	for (Field* field : list) {
 		if (field->x == x && field->y == y) {
@@ -64,7 +68,7 @@ Field* FindField(int x, int y, vector<Field*> list) {
 	return nullptr;
 };
 
-//Pobiera komórkê w stosunku do aktualnego po³o¿enia
+//Pobiera komórkê w stosunku do aktualnego po³o¿enia zwracaj¹c uwagê na kolizjê, i ju¿ istniej¹ce obiekty
 Field* GetCell(Field* cur, Direction dir, vector<vector<int>> map, vector<Field*> added) {
 	int x = cur->x;
 	int y = cur->y;
@@ -84,19 +88,11 @@ Field* GetCell(Field* cur, Direction dir, vector<vector<int>> map, vector<Field*
 	}
 	if (!(x >= 0 && x < xLen)) return nullptr;
 	if (!(y >= 0 && y < xLen)) return nullptr;
-	if (map[x][y] == 5 || map[x][y] == 2) return nullptr;
+	if (map[x][y] == 5) return nullptr;
 	if (FindField(x, y, added) != nullptr) return nullptr;
 
 	return new Field(x, y, cur->fieldCost + 1, cur);
 };
-
-void RefreshMap(vector<vector<int>>* map) {
-	for (int i = 0; i < map->size(); i++) {
-		for (int j = 0; j < (*map)[i].size(); j++) {
-			if((*map)[i][j]==7)(*map)[i][j] = 0;
-		}
-	}
-}
 
 //Rysuje mapê
 void DrawMap(vector<vector<int>> map) {
@@ -106,37 +102,37 @@ void DrawMap(vector<vector<int>> map) {
 	for (int i = map.size() - 1; i >= 0; i--) {
 		for (auto b : map[i]) {
 			switch (b) {
-			case 9:
+			case 9: //Pole trasy
 				SetConsoleTextAttribute(hOut, FOREGROUND_BLUE);
 				cout << " " << "R";
 				break;
-			case 7:
+			case 7: //Pole sprawdzane
 				SetConsoleTextAttribute(hOut, FOREGROUND_GREEN);
 				cout << " " << "M";
 				break;
-			case 5:
+			case 5: //Œciana
 				SetConsoleTextAttribute(hOut, FOREGROUND_RED);
 				cout << " " << "X";
 				break;
-			case 0:
+			case 0: //Nic
 				cout << " " << " ";
 				break;
 			}
 		}
 		cout << "\n";
-		SetConsoleTextAttribute(hOut, FOREGROUND_RED|FOREGROUND_BLUE|FOREGROUND_GREEN);
+		SetConsoleTextAttribute(hOut, FOREGROUND_RED | FOREGROUND_BLUE | FOREGROUND_GREEN);
 	}
 };
 
-
+//Spróbuj dodaæ komorkê do listy otwartej
 void TryAddCell(Field* cur, Direction dir, vector<vector<int>> map, vector<Field*> closedList, vector<Field*>* openList) {
-	auto field = GetCell(cur, dir, map, closedList);
+	auto field = GetCell(cur, dir, map, closedList);//Spróbuj pobraæ komórkê
 	if (field != nullptr) {
-		auto oldField = FindField(field->x, field->y, *openList);
-		if (oldField != nullptr) {
-			if (oldField->heuristicValue > field->heuristicValue) {
-				oldField->heuristicValue = field->heuristicValue;
-				oldField->parent = field->parent;
+		auto oldField = FindField(field->x, field->y, *openList); //ZnajdŸ takie same pole
+		if (oldField != nullptr) { //Jeœli istnieje
+			if (oldField->compareFunctionValue > field->compareFunctionValue) {//Gdy wartoœæ funkcji jest mniejsza
+				oldField->compareFunctionValue = field->compareFunctionValue; //Zmieñ wartoœæ funkcji dla starego obiektu
+				oldField->parent = field->parent;	// I rodzica
 			}
 		}
 		else {
@@ -175,16 +171,17 @@ int main() {
 
 	map[0][0] = 7;
 
-	while (closedList[closedList.size()-1]->x != 19 || closedList[closedList.size() - 1]->y != 19) {
+	while (closedList[closedList.size() - 1]->x != xLen-1 || closedList[closedList.size() - 1]->y != yLen-1) {
 
 		//gora dol lewo prawo
-		int index = closedList.size() - 1;
+		int index = closedList.size() - 1; //Index ostatnio dodanego pola
 
 		TryAddCell(closedList[index], Top, map, closedList, &openList);
 		TryAddCell(closedList[index], Down, map, closedList, &openList);
 		TryAddCell(closedList[index], Left, map, closedList, &openList);
 		TryAddCell(closedList[index], Right, map, closedList, &openList);
 
+		//Szukaj pola z najmniejsza wartoœcia funkcji
 		int elementIndex = 0;
 		Field* lowest = nullptr;
 		for (int i = 0; i < openList.size(); i++) {
@@ -193,27 +190,27 @@ int main() {
 				lowest = openList[i];
 				elementIndex = i;
 			}
-			else if (lowest->heuristicValue > openList[i]->heuristicValue) {
+			else if (lowest->compareFunctionValue > openList[i]->compareFunctionValue) {
 				lowest = openList[i];
 				elementIndex = i;
 			}
 		}
-		openList.erase(openList.begin() + elementIndex);
-		closedList.push_back(lowest);
-		map[lowest->x][lowest->y] = 7;
+		openList.erase(openList.begin() + elementIndex);//Usuñ z otwartej listy ten element
+		closedList.push_back(lowest); // Dodaj do zamkniêtej
+		map[lowest->x][lowest->y] = 7; //Narysuj na mapie
 		DrawMap(map);
-		Sleep(150);
+		Sleep(ANIMSPEED);
 	}
 
-	Field* field = closedList[closedList.size() - 1];
+	Field* field = closedList[closedList.size() - 1]; // Osatnie pole
 
 	//RefreshMap(&map);
 
-	while(field!=nullptr){
+	while (field != nullptr) {
 		map[field->x][field->y] = 9;
 		field = field->parent;
 		DrawMap(map);
-		Sleep(150);
+		Sleep(ANIMSPEED*2);
 	}
 
 	DrawMap(map);
