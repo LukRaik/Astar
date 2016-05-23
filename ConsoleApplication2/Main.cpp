@@ -176,6 +176,8 @@ int main() {
 		//gora dol lewo prawo
 		int index = closedList.size() - 1; //Index ostatnio dodanego pola
 
+		if (openList.size() == 0&&closedList.size()>1) break;
+
 		TryAddCell(closedList[index], Top, map, closedList, &openList);
 		TryAddCell(closedList[index], Down, map, closedList, &openList);
 		TryAddCell(closedList[index], Left, map, closedList, &openList);
@@ -204,16 +206,22 @@ int main() {
 
 	Field* field = closedList[closedList.size() - 1]; // Osatnie pole
 
+	if (field->x != 19 || field->y != 19) {
+		cout << "Szukane sciezki nieudane\n";
+	}
+	else {
+		while (field != nullptr) {
+			map[field->x][field->y] = 9;
+			field = field->parent;
+			DrawMap(map);
+			Sleep(ANIMSPEED * 2);
+		}
+
+		DrawMap(map);
+	}
 	//RefreshMap(&map);
 
-	while (field != nullptr) {
-		map[field->x][field->y] = 9;
-		field = field->parent;
-		DrawMap(map);
-		Sleep(ANIMSPEED*2);
-	}
-
-	DrawMap(map);
+	
 	plik.close();
 	system("pause");
 
